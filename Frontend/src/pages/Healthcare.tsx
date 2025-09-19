@@ -1,11 +1,23 @@
 import { useTranslation } from 'react-i18next';
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Phone, MapPin, Clock, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { RootState } from '@/store';
+import { setSelectedCountry, fetchHealthcareProviders, fetchEmergencyProviders } from '@/store/slices/healthcareSlice';
 
 const Healthcare = () => {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
+  const { selectedCountry } = useSelector((state: RootState) => state.healthcare);
+  const countries: Array<'EAC' | 'USA' | 'France' | 'Korea' | 'China'> = ['EAC', 'USA', 'France', 'Korea', 'China'];
+
+  useEffect(() => {
+    dispatch(fetchHealthcareProviders({ country: selectedCountry ?? undefined }) as any);
+    dispatch(fetchEmergencyProviders(selectedCountry ?? undefined) as any);
+  }, [dispatch, selectedCountry]);
 
   const emergencyContacts = [
     {
@@ -72,6 +84,28 @@ const Healthcare = () => {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Country Filter */}
+        <div className="mb-8 flex flex-wrap gap-2 items-center">
+          <span className="text-sm font-medium text-foreground mr-2">Countries:</span>
+          <Button
+            variant={selectedCountry === null ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => dispatch(setSelectedCountry(null) as any)}
+          >
+            All
+          </Button>
+          {countries.map((c) => (
+            <Button
+              key={c}
+              variant={selectedCountry === c ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => dispatch(setSelectedCountry(c) as any)}
+            >
+              {c}
+            </Button>
+          ))}
+        </div>
+
         {/* Emergency Alert */}
         <Alert className="mb-8 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
           <AlertCircle className="h-4 w-4 text-red-600" />

@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { Search, Filter } from 'lucide-react';
 import { RootState } from '@/store';
-import { fetchNewsStart, fetchNewsSuccess, fetchNewsFailure, setSelectedCategory } from '@/store/slices/newsSlice';
-import { newsService } from '@/services/newsService';
+import { fetchNews, setSelectedCountry } from '@/store/slices/newsSlice';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,84 +14,24 @@ import ErrorMessage from '@/components/common/ErrorMessage';
 const News = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  const { items, loading, error, categories, selectedCategory } = useSelector((state: RootState) => state.news);
+  const { items, isLoading, error, categories, selectedCountry } = useSelector((state: RootState) => state.news);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [filteredNews, setFilteredNews] = useState(items);
 
-  // Mock data for development
-  const mockNews = [
-    {
-      id: '1',
-      title: 'New Travel Guidelines for 2024',
-      excerpt: 'Important updates on travel requirements and safety protocols for international visitors.',
-      content: 'Full article content...',
-      imageUrl: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=500',
-      category: 'Travel Tips',
-      publishedAt: '2024-01-15T10:00:00Z',
-      author: 'Sarah Johnson',
-      tags: ['Guidelines', 'Safety', 'International']
-    },
-    {
-      id: '2',
-      title: 'Top 10 Hidden Gems to Discover',
-      excerpt: 'Explore breathtaking locations that most tourists never see. Your adventure awaits!',
-      content: 'Full article content...',
-      imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500',
-      category: 'Local Events',
-      publishedAt: '2024-01-14T15:30:00Z',
-      author: 'Mark Chen',
-      tags: ['Destinations', 'Adventure', 'Hidden Gems']
-    },
-    {
-      id: '3',
-      title: 'Healthcare Services for Visitors',
-      excerpt: 'Essential information about accessing healthcare services during your stay.',
-      content: 'Full article content...',
-      imageUrl: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=500',
-      category: 'Safety',
-      publishedAt: '2024-01-13T09:15:00Z',
-      author: 'Dr. Emily Watson',
-      tags: ['Healthcare', 'Emergency', 'Services']
-    },
-    {
-      id: '4',
-      title: 'Cultural Festivals This Month',
-      excerpt: 'Don\'t miss these amazing cultural events happening in your area this month.',
-      content: 'Full article content...',
-      imageUrl: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=500',
-      category: 'Culture',
-      publishedAt: '2024-01-12T14:20:00Z',
-      author: 'Lisa Rodriguez',
-      tags: ['Culture', 'Events', 'Festivals']
-    }
-  ];
+  const countries: Array<'EAC' | 'USA' | 'France' | 'Korea' | 'China'> = ['EAC', 'USA', 'France', 'Korea', 'China'];
 
   useEffect(() => {
-    const loadNews = async () => {
-      dispatch(fetchNewsStart());
-      try {
-        // For development, use mock data
-        // In production, replace with: const news = await newsService.getNews();
-        setTimeout(() => {
-          dispatch(fetchNewsSuccess(mockNews));
-        }, 1000);
-      } catch (error) {
-        dispatch(fetchNewsFailure('Failed to load news'));
-      }
-    };
-
-    loadNews();
-  }, [dispatch]);
+    dispatch(fetchNews({ page: 1, category: selectedCategory ?? undefined, country: selectedCountry ?? undefined }) as any);
+  }, [dispatch, selectedCategory, selectedCountry]);
 
   useEffect(() => {
     let filtered = items;
 
-    // Filter by category
     if (selectedCategory) {
       filtered = filtered.filter(item => item.category === selectedCategory);
     }
 
-    // Filter by search query
     if (searchQuery) {
       filtered = filtered.filter(item =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -104,12 +43,8 @@ const News = () => {
     setFilteredNews(filtered);
   }, [items, selectedCategory, searchQuery]);
 
-  const handleCategoryFilter = (category: string | null) => {
-    dispatch(setSelectedCategory(category));
-  };
-
   const retryFetch = () => {
-    // Retry logic here
+    dispatch(fetchNews({ page: 1, category: selectedCategory ?? undefined, country: selectedCountry ?? undefined }) as any);
   };
 
   return (
@@ -131,40 +66,64 @@ const News = () => {
       {/* Filters and Search */}
       <section className="py-8 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('common.search')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 travel-input"
-              />
-            </div>
-
-            {/* Category Filters */}
+          <div className="flex flex-col gap-6">
+            {/* Country Filters */}
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm font-medium text-foreground mr-2">
-                {t('news.categories')}:
-              </span>
+              <span className="text-sm font-medium text-foreground mr-2">Countries:</span>
               <Button
-                variant={selectedCategory === null ? "default" : "outline"}
+                variant={selectedCountry === null ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => handleCategoryFilter(null)}
+                onClick={() => dispatch(setSelectedCountry(null) as any)}
               >
                 {t('common.all')}
               </Button>
-              {categories.map((category) => (
+              {countries.map((c) => (
                 <Button
-                  key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
+                  key={c}
+                  variant={selectedCountry === c ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => handleCategoryFilter(category)}
+                  onClick={() => dispatch(setSelectedCountry(c) as any)}
                 >
-                  {category}
+                  {c}
                 </Button>
               ))}
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('common.search')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 travel-input"
+                />
+              </div>
+
+              {/* Category Filters */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm font-medium text-foreground mr-2">
+                  {t('news.categories')}:
+                </span>
+                <Button
+                  variant={selectedCategory === null ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  {t('common.all')}
+                </Button>
+                {categories.map((category) => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategory(category)}
+                  >
+                    {category}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -173,7 +132,7 @@ const News = () => {
       {/* Content */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {loading ? (
+          {isLoading ? (
             <div className="flex justify-center py-12">
               <LoadingSpinner size="lg" />
               <span className="ml-3 text-muted-foreground">{t('news.loading')}</span>

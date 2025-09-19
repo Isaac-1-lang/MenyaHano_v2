@@ -1,44 +1,44 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Clock, Star, Heart } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { MapPin, Clock, Star, Heart, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { RootState } from '@/store';
+import { fetchPlaces, setSelectedCountry } from '@/store/slices/placesSlice';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import ErrorMessage from '@/components/common/ErrorMessage';
 
 const Places = () => {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
+  const { items, isLoading, error, selectedCountry } = useSelector((state: RootState) => state.places);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredPlaces, setFilteredPlaces] = useState(items);
 
-  const places = [
-    {
-      id: '1',
-      name: 'Historic Downtown District',
-      description: 'Explore the rich history and vibrant culture of our historic downtown area.',
-      image: 'https://images.unsplash.com/photo-1549144511-f099e773c147?w=500',
-      category: 'Historical',
-      rating: 4.8,
-      estimatedTime: '2-3 hours',
-      isFavorite: false
-    },
-    {
-      id: '2',
-      name: 'Riverside Nature Park',
-      description: 'Beautiful natural scenery with walking trails and wildlife viewing.',
-      image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=500',
-      category: 'Nature',
-      rating: 4.6,
-      estimatedTime: '1-2 hours',
-      isFavorite: true
-    },
-    {
-      id: '3',
-      name: 'Local Art Gallery',
-      description: 'Contemporary and traditional artworks from local and international artists.',
-      image: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=500',
-      category: 'Culture',
-      rating: 4.7,
-      estimatedTime: '1 hour',
-      isFavorite: false
+  const countries: Array<'EAC' | 'USA' | 'France' | 'Korea' | 'China'> = ['EAC', 'USA', 'France', 'Korea', 'China'];
+
+  useEffect(() => {
+    dispatch(fetchPlaces({ page: 1, country: selectedCountry ?? undefined }) as any);
+  }, [dispatch, selectedCountry]);
+
+  useEffect(() => {
+    let filtered = items;
+    if (searchQuery) {
+      filtered = filtered.filter(place =>
+        place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        place.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        place.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
     }
-  ];
+    setFilteredPlaces(filtered);
+  }, [items, searchQuery]);
+
+  const retryFetch = () => {
+    dispatch(fetchPlaces({ page: 1, country: selectedCountry ?? undefined }) as any);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -56,62 +56,109 @@ const Places = () => {
         </div>
       </section>
 
+      {/* Filters */}
+      <section className="py-8 border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm font-medium text-foreground mr-2">Countries:</span>
+              <Button
+                variant={selectedCountry === null ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => dispatch(setSelectedCountry(null) as any)}
+              >
+                {t('common.all')}
+              </Button>
+              {countries.map((c) => (
+                <Button
+                  key={c}
+                  variant={selectedCountry === c ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => dispatch(setSelectedCountry(c) as any)}
+                >
+                  {c}
+                </Button>
+              ))}
+            </div>
+
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t('common.search')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 travel-input"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Places Grid */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {places.map((place) => (
-              <Card key={place.id} className="travel-card group overflow-hidden">
-                <div className="relative">
-                  <img
-                    src={place.image}
-                    alt={place.name}
-                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`absolute top-4 right-4 p-2 rounded-full ${
-                      place.isFavorite 
-                        ? 'bg-red-500 text-white hover:bg-red-600' 
-                        : 'bg-white/90 text-gray-600 hover:bg-white'
-                    }`}
-                  >
-                    <Heart className={`h-4 w-4 ${place.isFavorite ? 'fill-current' : ''}`} />
-                  </Button>
-                  <Badge className="absolute bottom-4 left-4 bg-background/90 text-foreground">
-                    {place.category}
-                  </Badge>
-                </div>
-
-                <CardHeader>
-                  <CardTitle className="group-hover:text-primary transition-colors duration-200">
-                    {place.name}
-                  </CardTitle>
-                  <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
-                      {place.rating}
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {place.estimatedTime}
-                    </div>
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : error ? (
+            <ErrorMessage message={error} onRetry={retryFetch} className="max-w-md mx-auto" />
+          ) : filteredPlaces.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground text-lg">No places found.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPlaces.map((place) => (
+                <Card key={place.id} className="travel-card group overflow-hidden">
+                  <div className="relative">
+                    <img
+                      src={place.imageUrl}
+                      alt={place.name}
+                      className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`absolute top-4 right-4 p-2 rounded-full bg-white/90 text-gray-600 hover:bg-white`}
+                    >
+                      <Heart className={`h-4 w-4`} />
+                    </Button>
+                    <Badge className="absolute bottom-4 left-4 bg-background/90 text-foreground">
+                      {place.category}
+                    </Badge>
                   </div>
-                </CardHeader>
 
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    {place.description}
-                  </p>
-                  <Button className="w-full travel-button">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    View Details
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <CardHeader>
+                    <CardTitle className="group-hover:text-primary transition-colors duration-200">
+                      {place.name}
+                    </CardTitle>
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                      <div className="flex items-center">
+                        <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
+                        {place.rating}
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        {/* No estimatedTime in data; show price range instead */}
+                        {place.priceRange}
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent>
+                    <p className="text-muted-foreground mb-4">
+                      {place.description}
+                    </p>
+                    <Button className="w-full travel-button">
+                      <MapPin className="h-4 w-4 mr-2" />
+                      View Details
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>
