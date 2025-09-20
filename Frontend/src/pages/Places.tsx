@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { RootState } from '@/store';
+import { RootState } from '@/store/index.ts';
 import { fetchPlaces, setSelectedCountry } from '@/store/slices/placesSlice';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
-import ErrorMessage from '@/components/common/ErrorMessage';
+import LoadingSpinner from '@/components/constants/LoadingSpinner';
+import ErrorMessage from '@/components/constants/ErrorMessage';
 
 const Places = () => {
   const { t } = useTranslation();

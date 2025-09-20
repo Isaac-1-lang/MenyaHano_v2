@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { Search, Filter } from 'lucide-react';
-import { RootState } from '@/store';
+import { RootState } from '@/store/index.ts';
 import { fetchNews, setSelectedCountry } from '@/store/slices/newsSlice';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import NewsCard from '@/components/common/NewsCard';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
-import ErrorMessage from '@/components/common/ErrorMessage';
+import NewsCard from '@/components/constants/NewsCard';
+import LoadingSpinner from '@/components/constants/LoadingSpinner';
+import ErrorMessage from '@/components/constants/ErrorMessage';
 
 const News = () => {
   const { t } = useTranslation();
